@@ -1,0 +1,118 @@
+/** 
+ * @file new filter
+ * @author hanbingbing
+ */
+
+define(function (require, exports) {
+
+    var data = require('common/data');
+
+    var defaultOptions = {
+        container: null,
+        typeList: [],
+        commonHandler: null,
+        specialHandler: null
+    };
+
+    function Filter(options) {
+        $.extend(this, defaultOptions, options);
+        this.init();
+    }
+
+    Filter.prototype = {
+        init: function () {
+            this.initFilterType();
+            this.bindEvents();
+            this.initRowMoreBtn();
+            this.bindMoreBtnEvent();
+        },
+
+        initFilterType: function () {
+            var list = $('.filter-row');
+            if (!list.length) {
+                return;
+            }
+            for (var i = 0, len = list.length; i < len; i++) {
+                this.typeList.push($(list[i]).data('type'));
+            }
+        },
+
+        bindEvents: function () {
+            var me = this;
+            $('.main')
+                .on('click', '.filter-item', function () {
+                    var target = $(this).find('span');
+                    var type = target.closest('.filter-row').data('type');
+                    var id = target.data('id');
+                    data.set(type + 'Id', id);
+                    var execFunc;
+
+                    if(me.specialHandler !== null) {
+                        var handler = me.specialHandler;
+                        for (var key in handler) {
+                            if (handler.hasOwnProperty(key)) {
+                                if (type === key && (typeof handler[key] === 'function')) {
+                                    handler[key]();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    me.commonHandler();
+
+                });
+        },
+
+        initRowMoreBtn: function () {
+            $.each($('.filter-wrap .more-item'), function () {
+                var more = $(this);
+                var row = more.closest('.filter-row');
+                var list = more.siblings('.list');
+                // 防止某些浏览器下 filters 只比 filterGroup 高一两个像素的问题
+                // 这里用 1.5 倍做阈值
+                if (list.height() / 1.5 > row.height()) {
+                    more.addClass('show-more');
+                }
+                if (more.data('open')) {
+                    row.addClass('filter-row-opened');
+                }
+            });
+        },
+
+        bindMoreBtnEvent: function () {
+            $('.main')
+                .on('click', '.more-item', function () {
+                    var target = $(this);
+                    var row = target.closest('.filter-row');
+                    if (row.hasClass('filter-row-opened')) {
+                        row.removeClass('filter-row-opened');
+                    }
+                    else {
+                        row.addClass('filter-row-opened');
+                    }
+                });
+        },
+
+        refresh: function () {
+            this.initFilterType();
+            this.initRowMoreBtn();
+        },
+
+        dispose: function () {
+            $('.main').off('click');
+            $('.filter-wrap').remove();
+        }
+    };
+
+    return Filter;
+
+});
+
+
+
+
+
+
+
+
